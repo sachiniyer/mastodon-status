@@ -14,12 +14,12 @@ You should be able to run/deploy this as well. Make sure to clone recursively.
 
 ### Development
 
-1. copy `env.sample` to `env` and modify it
+1. copy `env.sample` to `.env` and modify it
 2. install [Cargo Lambda](https://www.cargo-lambda.info/)
 3. run `cargo lambda watch --env-file .env`
 
 ### Deployment
 
-1. copy `env.sample` to `env` and modify it
+1. copy `env.sample` to `.env` and modify it
 2. install [Cargo Lambda](https://www.cargo-lambda.info/)
 3. to deploy `cargo lambda deploy --iam-role <IAM ROLE> --env-file .env <LAMBDA NAME> --binary-name mastodon-status`
