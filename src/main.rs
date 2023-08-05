@@ -1,4 +1,3 @@
-use dotenv::dotenv;
 use lambda_runtime::{service_fn, Error, LambdaEvent};
 use serde_json::{json, Value};
 
@@ -7,8 +6,6 @@ mod vars;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    dotenv().ok();
-
     let func = service_fn(func);
     lambda_runtime::run(func).await?;
     Ok(())

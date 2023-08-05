@@ -12,7 +12,7 @@ I use AWS infra because I don't want to be dependent on my cluster for this.
 
 ## Running
 
-You should be able to run/deploy this as well
+You should be able to run/deploy this as well. Make sure to clone recursively.
 
 ### Development
 
@@ -22,6 +22,6 @@ You should be able to run/deploy this as well
 
 ### Deployment
 
-1. install [Cargo Lambda](https://www.cargo-lambda.info/)
-2. to deploy `cargo lambda deploy --iam-role FULL_ROLE_ARN --enable-function-url mastodon-status`
-3. make sure to set your lambda env vars
+1. copy `env.sample` to `env` and modify it
+2. install [Cargo Lambda](https://www.cargo-lambda.info/)
+3. to deploy `cargo lambda deploy --iam-role <IAM ROLE> --env-file .env <LAMBDA NAME> --binary-name mastodon-status`
