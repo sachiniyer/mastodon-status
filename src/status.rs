@@ -61,32 +61,32 @@ impl Display for StatusResponse {
     }
 }
 
+impl StatusResponse {
+    fn into_map(s: &str) -> Result<HashMap<String, bool>, ()> {
+        let mut map = HashMap::new();
+        for line in s.lines() {
+            if line.contains(":") {
+                let mut split = line.split(":");
+                let key = split.next().unwrap().trim().to_string();
+                let value = split.next().unwrap().trim().to_string();
+                map.insert(key, value.parse::<bool>().unwrap());
+            }
+        }
+        Ok(map)
+    }
+}
+
 impl FromStr for StatusResponse {
     type Err = ();
-
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.contains("Broken") {
             return Ok(StatusResponse::Broken);
         }
         if s.contains("Degraded") {
-            let mut map = HashMap::new();
-            for line in s.lines().skip(1) {
-                let mut split = line.split(": ");
-                let k = split.next().unwrap();
-                let v = split.next().unwrap();
-                map.insert(k.to_string(), v.parse::<bool>().unwrap());
-            }
-            return Ok(StatusResponse::Degraded(map));
+            return Ok(StatusResponse::Degraded(Self::into_map(s)?));
         }
         if s.contains("Passing") {
-            let mut map = HashMap::new();
-            for line in s.lines().skip(1) {
-                let mut split = line.split(": ");
-                let k = split.next().unwrap();
-                let v = split.next().unwrap();
-                map.insert(k.to_string(), v.parse::<bool>().unwrap());
-            }
-            return Ok(StatusResponse::Passing(map));
+            return Ok(StatusResponse::Passing(Self::into_map(s)?));
         }
         Err(())
     }
@@ -102,8 +102,8 @@ pub async fn get_status() -> Result<StatusResponse, reqwest::Error> {
             let mut services: HashMap<String, bool> = HashMap::new();
             for i in json.as_array().unwrap() {
                 services.insert(
-                    i["site"].as_str().unwrap().to_string(),
-                    i["status"].as_bool().unwrap(),
+                    i.get("site").unwrap().as_str().unwrap().to_string(),
+                    i.get("status").unwrap().as_bool().unwrap(),
                 );
             }
 
