@@ -64,7 +64,7 @@ impl Display for StatusResponse {
 impl StatusResponse {
     fn into_map(s: &str) -> Result<HashMap<String, bool>, ()> {
         let mut map = HashMap::new();
-        for line in s.lines() {
+        for line in s.lines().skip(1) {
             if line.contains(":") {
                 let mut split = line.split(":");
                 let key = split.next().unwrap().trim().to_string();
