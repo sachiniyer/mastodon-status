@@ -8,6 +8,8 @@ Uses [megalodon-rs](https://docs.rs/megalodon/latest/megalodon/) and [aws lambda
 
 I use AWS infra because I don't want to be dependent on my cluster for this. However, I still use my [status api](https://status.sachiniyer.com) ([source](https;//github.com/sachiniyer/status)) to get status on all my services. If that goes down, I assume the whole cluster is down.
 
+Specifically, I have a lambda function that is triggered by a scheduled cloudwatch rule to run every 30 minutes.
+
 ## Running
 
 You should be able to run/deploy this as well. Make sure to clone recursively.
