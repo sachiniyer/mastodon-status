@@ -23,7 +23,7 @@ async fn verify_credentials(
 pub async fn get_post(
     client: &Box<dyn Megalodon + Send + Sync>,
     id: String,
-) -> Result<bool, error::Error> {
+) -> Result<String, error::Error> {
     let res = client
         .get_account_statuses(
             id,
@@ -40,20 +40,13 @@ pub async fn get_post(
         .await;
     let content = res.unwrap().json();
     let content = content[0].content.clone();
-    if content.contains("down") {
-        return Ok(false);
-    }
-    Ok(true)
+    Ok(content)
 }
 
 pub async fn send_post(
     client: &Box<dyn Megalodon + Send + Sync>,
-    status: bool,
+    status: String,
 ) -> Result<(), error::Error> {
-    match status {
-        true => client.post_status("site is up".to_string(), None).await,
-        _ => client.post_status("site is down".to_string(), None).await,
-    }
-    .unwrap();
+    client.post_status(status, None).await?;
     Ok(())
 }
