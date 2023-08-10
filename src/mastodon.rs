@@ -38,9 +38,7 @@ pub async fn get_post(
             }),
         )
         .await;
-    let content = res.unwrap().json();
-    let content = content[0].content.clone();
-    Ok(content)
+    Ok(res.unwrap().json()[0].content.clone())
 }
 
 pub async fn send_post(

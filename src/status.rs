@@ -1,3 +1,4 @@
+use html2text;
 use reqwest::{Client, StatusCode};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -17,13 +18,14 @@ impl PartialEq for StatusResponse {
         match (self, other) {
             (StatusResponse::Broken, StatusResponse::Broken) => true,
             (StatusResponse::Degraded(i), StatusResponse::Degraded(j)) => {
-                for (ii, ij) in i.iter() {
-                    if !j.contains_key(ii) || ij != j.get(ii).unwrap() {
+                if i.len() != j.len() {
+                    return false;
+                }
+                for (k, v) in i {
+                    if !j.contains_key(k) {
                         return false;
                     }
-                }
-                for (ji, jj) in j.iter() {
-                    if !i.contains_key(ji) || jj != i.get(ji).unwrap() {
+                    if j.get(k).unwrap() != v {
                         return false;
                     }
                 }
@@ -63,13 +65,25 @@ impl Display for StatusResponse {
 
 impl StatusResponse {
     fn into_map(s: &str) -> Result<HashMap<String, bool>, ()> {
+        let decorator = html2text::render::text_renderer::TrivialDecorator::new();
+        let parsed = html2text::from_read_with_decorator(s.as_bytes(), 8192, decorator);
         let mut map = HashMap::new();
-        for line in s.lines().skip(1) {
-            if line.contains(":") {
-                let mut split = line.split(":");
-                let key = split.next().unwrap().trim().to_string();
-                let value = split.next().unwrap().trim().to_string();
-                map.insert(key, value.parse::<bool>().unwrap());
+        for line in parsed.lines().skip(1) {
+            if line.contains("https://") {
+                let delimiter = ':';
+
+                let second_instance_position = line
+                    .char_indices()
+                    .filter(|&(_, c)| c == delimiter)
+                    .nth(1)
+                    .map(|(position, _)| position)
+                    .unwrap_or(line.len());
+
+                let (key, value) = line.split_at(second_instance_position + delimiter.len_utf8());
+                map.insert(
+                    key.trim_end_matches(delimiter).trim().to_string(),
+                    value.trim().parse::<bool>().unwrap(),
+                );
             }
         }
         Ok(map)

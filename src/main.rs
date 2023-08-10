@@ -36,6 +36,9 @@ async fn func(_event: LambdaEvent<Value>) -> Result<Value, Error> {
     };
 
     let res = json!({ "message": status.to_string(), "changed": changed});
+    println!("Previous: {}", prev_status.to_string());
+    println!("Current: {}", status.to_string());
+    println!("Different: {}", prev_status != status);
     println!("{}", res.to_string());
     Ok(res)
 }
