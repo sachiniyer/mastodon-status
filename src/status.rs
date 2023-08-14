@@ -21,13 +21,11 @@ impl PartialEq for StatusResponse {
                 if i.len() != j.len() {
                     return false;
                 }
-                let mut i = i.clone();
-                i.remove("https://computer.sachiniyer.com");
                 for (k, v) in i {
-                    if !j.contains_key(&k) {
+                    if !j.contains_key(k) {
                         return false;
                     }
-                    if *j.get(&k).unwrap() != v {}
+                    if j.get(k).unwrap() != v {}
                 }
                 true
             }
@@ -120,7 +118,8 @@ pub async fn get_status() -> Result<StatusResponse, reqwest::Error> {
                     i.get("status").unwrap().as_bool().unwrap(),
                 );
             }
-
+            // this fluctuates too much, so just remove it.
+            services.remove("https://computer.sachiniyer.com");
             let mut degraded = Vec::new();
             for (k, v) in &services {
                 if !v {
