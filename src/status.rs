@@ -6,7 +6,6 @@ use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 use url::Url;
 
-
 #[derive(Debug)]
 pub enum StatusResponse {
     Broken,
@@ -47,14 +46,30 @@ impl Display for StatusResponse {
             StatusResponse::Degraded(map) => {
                 writeln!(f, "Degraded")?;
                 for (k, v) in map {
-                    writeln!(f, "{}: {}", k, match v { true => 't', false => 'f' })?;
+                    writeln!(
+                        f,
+                        "{}: {}",
+                        k,
+                        match v {
+                            true => 't',
+                            false => 'f',
+                        }
+                    )?;
                 }
                 Ok(())
             }
             StatusResponse::Passing(map) => {
                 writeln!(f, "Passing")?;
                 for (k, v) in map {
-                    writeln!(f, "{}: {}", k, match v { true => 't', false => 'f' })?;
+                    writeln!(
+                        f,
+                        "{}: {}",
+                        k,
+                        match v {
+                            true => 't',
+                            false => 'f',
+                        }
+                    )?;
                 }
                 Ok(())
             }
@@ -107,13 +122,15 @@ impl FromStr for StatusResponse {
 }
 
 fn truncate_message(map: HashMap<String, bool>) -> HashMap<String, bool> {
-    map.into_iter().map(|(k, v)| {
-        let url = Url::parse(&k).unwrap();
-        let authority = url.host_str().unwrap();
-        let components: Vec<&str> = authority.split('.').collect();
-        let first_component = components.first().unwrap();
-        (first_component.to_string(), v)
-    }).collect()
+    map.into_iter()
+        .map(|(k, v)| {
+            let url = Url::parse(&k).unwrap();
+            let authority = url.host_str().unwrap();
+            let components: Vec<&str> = authority.split('.').collect();
+            let first_component = components.first().unwrap();
+            (first_component.to_string(), v)
+        })
+        .collect()
 }
 
 pub async fn get_status() -> Result<StatusResponse, reqwest::Error> {
