@@ -1,10 +1,11 @@
-use html2text;
 use reqwest::{Client, StatusCode};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
+use url::Url;
+
 
 #[derive(Debug)]
 pub enum StatusResponse {
@@ -46,14 +47,14 @@ impl Display for StatusResponse {
             StatusResponse::Degraded(map) => {
                 writeln!(f, "Degraded")?;
                 for (k, v) in map {
-                    writeln!(f, "{}: {}", k, v)?;
+                    writeln!(f, "{}: {}", k, match v { true => 't', false => 'f' })?;
                 }
                 Ok(())
             }
             StatusResponse::Passing(map) => {
                 writeln!(f, "Passing")?;
                 for (k, v) in map {
-                    writeln!(f, "{}: {}", k, v)?;
+                    writeln!(f, "{}: {}", k, match v { true => 't', false => 'f' })?;
                 }
                 Ok(())
             }
@@ -66,8 +67,9 @@ impl StatusResponse {
         let decorator = html2text::render::text_renderer::TrivialDecorator::new();
         let parsed = html2text::from_read_with_decorator(s.as_bytes(), 8192, decorator);
         let mut map = HashMap::new();
+        println!("{:?}", parsed);
         for line in parsed.lines().skip(1) {
-            if line.contains("https://") {
+            if line.contains(": ") {
                 let delimiter = ':';
 
                 let second_instance_position = line
@@ -104,9 +106,20 @@ impl FromStr for StatusResponse {
     }
 }
 
+fn truncate_message(map: HashMap<String, bool>) -> HashMap<String, bool> {
+    map.into_iter().map(|(k, v)| {
+        let url = Url::parse(&k).unwrap();
+        let authority = url.host_str().unwrap();
+        let components: Vec<&str> = authority.split('.').collect();
+        let first_component = components.first().unwrap();
+        (first_component.to_string(), v)
+    }).collect()
+}
+
 pub async fn get_status() -> Result<StatusResponse, reqwest::Error> {
     let vars = env::vars().collect::<HashMap<String, String>>();
     let url = vars.get("STATUS_API").unwrap();
+
     let client = Client::new();
     if let Ok(res) = client.get(url).send().await {
         if let StatusCode::OK = res.status() {
@@ -127,8 +140,8 @@ pub async fn get_status() -> Result<StatusResponse, reqwest::Error> {
                 }
             }
             match degraded.len() {
-                0 => return Ok(StatusResponse::Passing(services)),
-                _ => return Ok(StatusResponse::Degraded(services)),
+                0 => return Ok(StatusResponse::Passing(truncate_message(services))),
+                _ => return Ok(StatusResponse::Degraded(truncate_message(services))),
             }
         }
     };
