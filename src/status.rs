@@ -51,8 +51,8 @@ impl Display for StatusResponse {
                         "{}: {}",
                         k,
                         match v {
-                            true => 't',
-                            false => 'f',
+                            true => "t",
+                            false => "f",
                         }
                     )?;
                 }
@@ -66,8 +66,8 @@ impl Display for StatusResponse {
                         "{}: {}",
                         k,
                         match v {
-                            true => 't',
-                            false => 'f',
+                            true => "t",
+                            false => "f",
                         }
                     )?;
                 }
@@ -84,22 +84,23 @@ impl StatusResponse {
         let mut map = HashMap::new();
         println!("{:?}", parsed);
         for line in parsed.lines().skip(1) {
-            if line.contains(": ") {
-                let delimiter = ':';
-
-                let second_instance_position = line
-                    .char_indices()
-                    .filter(|&(_, c)| c == delimiter)
-                    .nth(1)
-                    .map(|(position, _)| position)
-                    .unwrap_or(line.len());
-
-                let (key, value) = line.split_at(second_instance_position + delimiter.len_utf8());
-                map.insert(
-                    key.trim_end_matches(delimiter).trim().to_string(),
-                    value.trim().parse::<bool>().unwrap(),
-                );
-            }
+            let (key, value) = match line.rfind(":") {
+                Some(index) => {
+                    let (first, second) = line.split_at(index);
+                    let second = &second[1..];
+                    (first, second)
+                }
+                None => {
+                    panic!("Something went wrong when parsing StatusResponse");
+                }
+            };
+            let value = match value.trim() {
+                "t" => true,
+                "f" => false,
+                _ => panic!("Invalid true or false value when parsing StatusResponse"),
+            };
+            println!("{},{}", key, value);
+            map.insert(key.trim().to_string(), value);
         }
         Ok(map)
     }
