@@ -58,6 +58,7 @@ pub async fn get_post(
                 exclude_replies: None,
                 exclude_reblogs: None,
                 only_media: None,
+                only_public: None,
             }),
         )
         .await;
