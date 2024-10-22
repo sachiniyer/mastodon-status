@@ -5,6 +5,7 @@ mod mastodon;
 mod status;
 mod vars;
 
+/// Lambda function entrypoint
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let func = service_fn(func);
@@ -12,6 +13,16 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
+/// Lambda function
+///
+/// It does the following
+/// 1. Check if the environment variables are set
+/// 2. Login to Mastodon
+/// 3. Get the previous status
+/// 4. Get the current status from k3s cluster
+/// 5. If the status is different, send a new status to Mastodon
+/// 6. Return the status
+/// 7. Log the results
 async fn func(_event: LambdaEvent<Value>) -> Result<Value, Error> {
     if let Some(v) = crate::vars::check() {
         return Ok(v);
@@ -36,9 +47,12 @@ async fn func(_event: LambdaEvent<Value>) -> Result<Value, Error> {
     };
 
     let res = json!({ "message": status.to_string(), "changed": changed});
-    println!("Previous: {}", prev_status.to_string());
-    println!("Current: {}", status.to_string());
-    println!("Different: {}", prev_status != status);
-    println!("{}", res.to_string());
+    println!(
+        "Previous: {}\nCurrent: {}\nDifferent: {}\nResult: {}",
+        prev_status.to_string(),
+        status.to_string(),
+        prev_status != status,
+        res.to_string()
+    );
     Ok(res)
 }

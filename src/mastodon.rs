@@ -3,6 +3,11 @@ use megalodon::{error, generator, Megalodon, SNS};
 use std::collections::HashMap;
 use std::env;
 
+/// Login to the mastodon instance and verify the credentials
+///
+/// # Returns
+/// - Ok((client, id)) if the login is successful
+/// - Err(error) if the login fails
 pub async fn login() -> Result<(Box<dyn Megalodon + Send + Sync>, String), error::Error> {
     let vars = env::vars().collect::<HashMap<String, String>>();
     let url = vars.get("INSTANCE_URL").unwrap().clone();
@@ -10,6 +15,15 @@ pub async fn login() -> Result<(Box<dyn Megalodon + Send + Sync>, String), error
     verify_credentials(url.as_str(), token).await
 }
 
+/// Verify the credentials of the user
+///
+/// # Arguments
+/// - url: The mastodon instance url
+/// - access_token: The access token of the user
+///
+/// # Returns
+/// - Ok((client, id)) if the login is successful
+/// - Err(error) if the login fails
 async fn verify_credentials(
     url: &str,
     access_token: String,
@@ -20,6 +34,15 @@ async fn verify_credentials(
     Ok((client, id))
 }
 
+/// Get the latest post of the user
+///
+/// # Arguments
+/// - client: The client object
+/// - id: The id of the user
+///
+/// # Returns
+/// - Ok(post) if the post is successfully fetched
+/// - Err(error) if the post is not fetched
 pub async fn get_post(
     client: &Box<dyn Megalodon + Send + Sync>,
     id: String,
@@ -41,6 +64,15 @@ pub async fn get_post(
     Ok(res.unwrap().json()[0].content.clone())
 }
 
+/// Send a post to the mastodon instance
+///
+/// # Arguments
+/// - client: The client object
+/// - status: The status to be posted
+///
+/// # Returns
+/// - Ok(()) if the post is successfully sent
+/// - Err(error) if the post is not sent
 pub async fn send_post(
     client: &Box<dyn Megalodon + Send + Sync>,
     status: String,
