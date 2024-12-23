@@ -39,20 +39,22 @@ async fn verify_credentials(
 /// # Arguments
 /// - client: The client object
 /// - id: The id of the user
+/// - max_id: The max_id of the post
 ///
 /// # Returns
 /// - Ok(post) if the post is successfully fetched
 /// - Err(error) if the post is not fetched
 pub async fn get_post(
     client: &Box<dyn Megalodon + Send + Sync>,
-    id: String,
+    id: &String,
+    max_id: Option<String>,
 ) -> Result<String, error::Error> {
     let res = client
         .get_account_statuses(
-            id,
+            id.to_string(),
             Some(&GetAccountStatusesInputOptions {
                 limit: Some(1),
-                max_id: None,
+                max_id,
                 since_id: None,
                 pinned: None,
                 exclude_replies: None,
@@ -61,8 +63,16 @@ pub async fn get_post(
                 only_public: None,
             }),
         )
-        .await;
-    Ok(res.unwrap().json()[0].content.clone())
+        .await?;
+    if res.json().len() == 0 {
+        panic!("No post found");
+    }
+    // This is a little dangerous, but easiest way to get the right post.
+    if res.json()[0].content.contains("SACHIN UPDATE") {
+        // https://rust-lang.github.io/async-book/07_workarounds/04_recursion.html
+        return Box::pin(get_post(client, id, Some(res.json()[0].id.clone()))).await;
+    }
+    Ok(res.json()[0].content.clone())
 }
 
 /// Send a post to the mastodon instance

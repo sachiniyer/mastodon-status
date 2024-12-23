@@ -28,21 +28,17 @@ async fn func(_event: LambdaEvent<Value>) -> Result<Value, Error> {
         return Ok(v);
     }
 
-    let (client, id) = mastodon::login().await.unwrap();
+    let (client, id) = mastodon::login().await?;
 
-    let prev_status: status::StatusResponse = mastodon::get_post(&client, id)
-        .await
-        .unwrap()
-        .parse()
-        .unwrap();
+    let prev_status: status::StatusResponse = mastodon::get_post(&client, &id, None)
+        .await?
+        .parse().unwrap();
 
-    let status = status::get_status().await.unwrap();
+    let status = status::get_status().await?;
 
     let mut changed = false;
     if prev_status != status {
-        mastodon::send_post(&client, status.to_string())
-            .await
-            .unwrap();
+        mastodon::send_post(&client, status.to_string()).await?;
         changed = true;
     };
 
