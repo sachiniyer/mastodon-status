@@ -19,6 +19,7 @@ You should be able to run/deploy this as well. Make sure to clone recursively.
 1. copy `env.sample` to `.env` and modify it
 2. install [Cargo Lambda](https://www.cargo-lambda.info/)
 3. run `cargo lambda watch --env-file .env`
+4. run `cargo lambda invoke --data-ascii "{}"`to test the function
 
 ### Deployment
 
