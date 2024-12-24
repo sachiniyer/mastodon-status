@@ -21,6 +21,46 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
+/// Send a page to PagerDuty
+///
+/// It does the following
+/// 1. Get the environment variables
+/// 2. Create a PagerDuty event
+/// 3. Send the event
+/// 4. Log the result
+async fn send_page(status_response: Option<String>) {
+    let vars = env::vars().collect::<HashMap<String, String>>();
+    let e = Event::AlertTrigger(AlertTrigger {
+        payload: AlertTriggerPayload::<String> {
+            summary: "Parts of the website are down".to_owned(),
+            source: "sachiniyer.com".to_owned(),
+            timestamp: Some(OffsetDateTime::now_utc()),
+            severity: Severity::Info,
+            component: Some("website".to_owned()),
+            group: Some("website status".to_owned()),
+            class: Some("prod".to_owned()),
+            custom_details: status_response,
+        },
+        dedup_key: Some(OffsetDateTime::now_utc().to_string()),
+        images: None,
+        links: None,
+        client: None,
+        client_url: None,
+    });
+
+    let result = tokio::task::spawn_blocking(move || {
+        EventsV2::new(
+            vars.get("PAGER_DUTY_KEY").unwrap().to_string(),
+            Some("status".to_owned()),
+        )
+        .unwrap()
+        .event(e)
+    })
+    .await
+    .unwrap();
+    println!("Result: {:?}", result);
+}
+
 /// Lambda function
 ///
 /// It does the following
@@ -53,6 +93,7 @@ async fn func(_event: LambdaEvent<Value>) -> Result<Value, Error> {
         let mut changed = false;
         if prev_status != status {
             mastodon::send_post(&client, status.to_string()).await?;
+            send_page(Some(status.to_string())).await;
             changed = true;
         };
 
@@ -69,40 +110,7 @@ async fn func(_event: LambdaEvent<Value>) -> Result<Value, Error> {
     .await;
     if let Err(e) = result {
         eprintln!("Error: {:?}", e);
-
-        let vars = env::vars().collect::<HashMap<String, String>>();
-        let ev2 = EventsV2::new(
-            vars.get("PAGERDUTY_TOKEN").unwrap().to_string(),
-            Some("status".to_owned()),
-        )
-        .unwrap();
-        let e = Event::AlertTrigger(AlertTrigger {
-            payload: AlertTriggerPayload::<Option<String>> {
-                summary: "Syncronously Test Alert 1 Maximum fields".to_owned(),
-                source: "hostname".to_owned(),
-                timestamp: Some(OffsetDateTime::now_utc()),
-                severity: Severity::Info,
-                component: Some("postgres".to_owned()),
-                group: Some("prod-datapipe".to_owned()),
-                class: Some("deploy".to_owned()),
-                custom_details: None,
-            },
-            dedup_key: Some("something".to_string()),
-            images: Some(vec![Image {
-                src: "https://polyverse.com/static/img/SplashPageIMG/polyverse_blue.png".to_owned(),
-                href: Some("https://polyverse.com".to_owned()),
-                alt: Some("The Polyverse Logo".to_owned()),
-            }]),
-            links: Some(vec![Link {
-                href: "https://polyverse.com".to_owned(),
-                text: Some("Polyverse homepage".to_owned()),
-            }]),
-            client: Some("Zerotect".to_owned()),
-            client_url: Some("https://github.com/polyverse/zerotect".to_owned()),
-        });
-
-        let result = ev2.event(e);
-        println!("Result: {:?}", result);
+        send_page(None).await;
         return Err(Error::from("Error in the lambda function"));
     }
     result
