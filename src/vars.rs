@@ -10,7 +10,12 @@ use std::env;
 fn check_envs() -> Option<String> {
     let var_map: HashMap<String, String> = env::vars().collect();
     let mut vars: HashMap<String, Option<&String>> = HashMap::new();
-    let envs = vec!["INSTANCE_URL", "ACCESS_TOKEN", "STATUS_API"];
+    let envs = vec![
+        "INSTANCE_URL",
+        "ACCESS_TOKEN",
+        "STATUS_API",
+        "PAGER_DUTY_KEY",
+    ];
     envs.iter().for_each(|e| {
         vars.insert(e.to_string(), var_map.get(&e.to_string()));
     });

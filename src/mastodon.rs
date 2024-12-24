@@ -10,6 +10,7 @@ use std::env;
 /// - Err(error) if the login fails
 pub async fn login() -> Result<(Box<dyn Megalodon + Send + Sync>, String), error::Error> {
     let vars = env::vars().collect::<HashMap<String, String>>();
+    // already checked if these exist in the start of the function calling
     let url = vars.get("INSTANCE_URL").unwrap().clone();
     let token = vars.get("ACCESS_TOKEN").unwrap().clone();
     verify_credentials(url.as_str(), token).await

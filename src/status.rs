@@ -238,34 +238,63 @@ fn truncate_message(map: HashMap<String, bool>) -> HashMap<String, bool> {
 ///
 /// # Returns
 /// - A Result containing the StatusResponse or a reqwest::Error
-pub async fn get_status() -> Result<StatusResponse, reqwest::Error> {
+pub async fn get_status() -> Result<StatusResponse, String> {
     let vars = env::vars().collect::<HashMap<String, String>>();
     let url = vars.get("STATUS_API").unwrap();
-
     let client = Client::new();
-    if let Ok(res) = client.get(url).send().await {
-        if let StatusCode::OK = res.status() {
-            let json = res.json::<Value>().await?;
-            let mut services: HashMap<String, bool> = HashMap::new();
-            for i in json.as_array().unwrap() {
-                services.insert(
-                    i.get("site").unwrap().as_str().unwrap().to_string(),
-                    i.get("status").unwrap().as_bool().unwrap(),
-                );
-            }
-            // this fluctuates too much, so just remove it.
-            services.remove("https://computer.sachiniyer.com");
-            let mut degraded = Vec::new();
-            for (k, v) in &services {
-                if !v {
-                    degraded.push((k.to_string(), *v));
-                }
-            }
-            match degraded.len() {
-                0 => return Ok(StatusResponse::Passing(truncate_message(services))),
-                _ => return Ok(StatusResponse::Degraded(truncate_message(services))),
-            }
-        }
+
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| format!("Request error: {}", e))?;
+    if response.status() != StatusCode::OK {
+        return Ok(StatusResponse::Broken);
+    }
+
+    let json: Value = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read response text: {}", e))
+        .and_then(|body| {
+            serde_json::from_str(&body)
+                .map_err(|e| format!("Failed to parse JSON: {}, original content: {}", e, body))
+        })?;
+
+    let mut services = HashMap::new();
+    if let Err(err) = json
+        .as_array()
+        .ok_or_else(|| "Expected JSON array".to_string())
+        .and_then(|arr| {
+            arr.iter().try_for_each(|i| {
+                let site = i
+                    .get("site")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| "Missing or invalid 'site' field".to_string())?;
+                let status = i
+                    .get("status")
+                    .and_then(|v| v.as_bool())
+                    .ok_or_else(|| "Missing or invalid 'status' field".to_string())?;
+                services.insert(site.to_string(), status);
+                Ok(())
+            })
+        })
+    {
+        return Err(err);
+    }
+
+    services.remove("https://computer.sachiniyer.com");
+
+    let degraded: Vec<_> = services
+        .iter()
+        .filter(|&(_, &status)| !status)
+        .map(|(site, &status)| (site.clone(), status))
+        .collect();
+
+    let response = match degraded.len() {
+        0 => StatusResponse::Passing(truncate_message(services)),
+        _ => StatusResponse::Degraded(truncate_message(services)),
     };
-    Ok(StatusResponse::Broken)
+
+    Ok(response)
 }

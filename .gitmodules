@@ -1,3 +1,7 @@
 [submodule "megalodon-rs"]
 	path = megalodon-rs
 	url = https://github.com/sachiniyer/megalodon-rs-no-openssl
+
+[submodule "pagerduty-rs"]
+	path = pagerduty-rs
+	url = https://github.com/sachiniyer/pagerduty-rs-no-openssl
