@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use megalodon::megalodon::GetAccountStatusesInputOptions;
 use megalodon::{error, generator, Megalodon, SNS};
 use std::collections::HashMap;
@@ -49,7 +50,7 @@ pub async fn get_post(
     client: &Box<dyn Megalodon + Send + Sync>,
     id: &String,
     max_id: Option<String>,
-) -> Result<String, error::Error> {
+) -> Result<(String, DateTime<Utc>), error::Error> {
     let res = client
         .get_account_statuses(
             id.to_string(),
@@ -73,7 +74,10 @@ pub async fn get_post(
         // https://rust-lang.github.io/async-book/07_workarounds/04_recursion.html
         return Box::pin(get_post(client, id, Some(res.json()[0].id.clone()))).await;
     }
-    Ok(res.json()[0].content.clone())
+    Ok((
+        res.json()[0].content.clone(),
+        res.json()[0].created_at.clone(),
+    ))
 }
 
 /// Send a post to the mastodon instance

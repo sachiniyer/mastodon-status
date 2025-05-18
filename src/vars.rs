@@ -15,6 +15,7 @@ fn check_envs() -> Option<String> {
         "ACCESS_TOKEN",
         "STATUS_API",
         "PAGER_DUTY_KEY",
+        "POST_COOLDOWN_SECS",
     ];
     envs.iter().for_each(|e| {
         vars.insert(e.to_string(), var_map.get(&e.to_string()));
